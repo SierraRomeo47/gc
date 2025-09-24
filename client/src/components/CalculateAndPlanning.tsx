@@ -5,519 +5,543 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Calculator, TrendingUp, AlertTriangle, CheckCircle2, Fuel, Ship, Target, BarChart3 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Calculator, TrendingUp, AlertTriangle, CheckCircle2, Fuel, Ship, Target, BarChart3, Download, FileText, Calendar } from "lucide-react";
 import { useState } from "react";
 
-interface PenaltyCalculation {
-  deficit: number;
-  penaltyRate: number;
-  totalPenalty: number;
-  complianceGap: number;
-}
-
-interface FuelMixScenario {
-  fuelType: string;
-  percentage: number;
-  ghgIntensity: number;
-  cost: number;
-}
-
-interface ComplianceScenario {
+interface VesselInfo {
   name: string;
-  currentIntensity: number;
-  targetIntensity: number;
-  energyUsed: number;
-  creditBalance: number;
-  scenarios: FuelMixScenario[];
+  imoNumber: string;
+  flag: string;
+  vesselType: string;
+  grossTonnage: number;
+  deadweight: number;
+  yearBuilt: number;
+}
+
+interface FuelConsumptionData {
+  voyageId: string;
+  departure: string;
+  arrival: string;
+  distance: number;
+  fuelType: string;
+  fuelConsumed: number;
+  fuelCost: number;
+  ghgIntensity: number;
+  lcvValue: number;
+  energyContent: number;
+}
+
+interface ComplianceResult {
+  year: number;
+  targetReduction: number;
+  actualIntensity: number;
+  complianceStatus: 'compliant' | 'warning' | 'non-compliant';
+  penalty: number;
+  creditsUsed: number;
 }
 
 const CalculateAndPlanning = () => {
-  const [activeTab, setActiveTab] = useState("penalty");
+  const [activeTab, setActiveTab] = useState("calculator");
   
-  // Penalty Calculator State
-  const [vesselName, setVesselName] = useState("Atlantic Pioneer");
-  const [currentIntensity, setCurrentIntensity] = useState(85.2);
-  const [targetIntensity, setTargetIntensity] = useState(89.3);
-  const [energyUsed, setEnergyUsed] = useState(125000);
-  const [penaltyCalculation, setPenaltyCalculation] = useState<PenaltyCalculation | null>(null);
-
-  // Compliance Planning State
-  const [planningScenario, setPlanningScenario] = useState<ComplianceScenario>({
-    name: "2025 Compliance Plan",
-    currentIntensity: 92.5,
-    targetIntensity: 89.3,
-    energyUsed: 1500000,
-    creditBalance: -125.5,
-    scenarios: [
-      { fuelType: "HFO", percentage: 60, ghgIntensity: 91.2, cost: 520 },
-      { fuelType: "MGO", percentage: 30, ghgIntensity: 85.1, cost: 680 },
-      { fuelType: "Bio-LNG", percentage: 10, ghgIntensity: 45.3, cost: 1200 }
-    ]
+  // Vessel Information State
+  const [vesselInfo, setVesselInfo] = useState<VesselInfo>({
+    name: "Atlantic Pioneer",
+    imoNumber: "9876543",
+    flag: "Germany",
+    vesselType: "Container Ship",
+    grossTonnage: 85000,
+    deadweight: 120000,
+    yearBuilt: 2018
   });
-
-  // Fuel Optimization State
-  const [fuelMix, setFuelMix] = useState<FuelMixScenario[]>([
-    { fuelType: "HFO", percentage: 70, ghgIntensity: 91.2, cost: 520 },
-    { fuelType: "MGO", percentage: 20, ghgIntensity: 85.1, cost: 680 },
-    { fuelType: "Bio-fuel", percentage: 10, ghgIntensity: 55.0, cost: 950 }
+  
+  // Calculator Parameters
+  const [calculationYear, setCalculationYear] = useState(2025);
+  const [totalEnergyUsed, setTotalEnergyUsed] = useState(1250000);
+  const [baselineIntensity, setBaselineIntensity] = useState(91.16);
+  
+  // Fuel Consumption Data State
+  const [fuelConsumptionData, setFuelConsumptionData] = useState<FuelConsumptionData[]>([
+    {
+      voyageId: "V001",
+      departure: "Hamburg",
+      arrival: "Rotterdam", 
+      distance: 285,
+      fuelType: "HFO - 380 cSt",
+      fuelConsumed: 125.5,
+      fuelCost: 520,
+      ghgIntensity: 91.16,
+      lcvValue: 40.2,
+      energyContent: 5048.1
+    },
+    {
+      voyageId: "V002", 
+      departure: "Rotterdam",
+      arrival: "Le Havre",
+      distance: 320,
+      fuelType: "MGO",
+      fuelConsumed: 85.2,
+      fuelCost: 680,
+      ghgIntensity: 87.5,
+      lcvValue: 42.7,
+      energyContent: 3638.04
+    },
+    {
+      voyageId: "V003",
+      departure: "Le Havre", 
+      arrival: "Valencia",
+      distance: 890,
+      fuelType: "Bio-fuel",
+      fuelConsumed: 45.8,
+      fuelCost: 950,
+      ghgIntensity: 18.7,
+      lcvValue: 39.8,
+      energyContent: 1822.84
+    }
   ]);
 
-  // Credit Planning State
-  const [creditPlan, setCreditPlan] = useState({
-    currentBalance: -125.5,
-    requiredCredits: 250.0,
-    bankingPlan: 100.0,
-    borrowingPlan: 150.0,
-    tradingBudget: 50000
-  });
+  // Compliance Results
+  const [complianceResults, setComplianceResults] = useState<ComplianceResult[]>([
+    { year: 2025, targetReduction: 2, actualIntensity: 89.34, complianceStatus: 'compliant', penalty: 0, creditsUsed: 0 },
+    { year: 2026, targetReduction: 6, actualIntensity: 85.69, complianceStatus: 'compliant', penalty: 0, creditsUsed: 0 },
+    { year: 2027, targetReduction: 6, actualIntensity: 85.69, complianceStatus: 'warning', penalty: 1200, creditsUsed: 15.5 },
+    { year: 2028, targetReduction: 8, actualIntensity: 83.87, complianceStatus: 'warning', penalty: 2400, creditsUsed: 22.3 },
+    { year: 2029, targetReduction: 10, actualIntensity: 82.04, complianceStatus: 'non-compliant', penalty: 8950, creditsUsed: 45.2 },
+    { year: 2030, targetReduction: 20, actualIntensity: 72.93, complianceStatus: 'compliant', penalty: 0, creditsUsed: 0 }
+  ]);
 
-  const calculatePenalty = () => {
-    const complianceGap = Math.max(0, currentIntensity - targetIntensity);
-    const deficit = complianceGap * energyUsed / 1000; // Convert to proper units
-    const penaltyRate = 2400; // EUR per tonne CO2eq
-    const totalPenalty = deficit * penaltyRate;
-    
-    const result: PenaltyCalculation = {
-      deficit,
-      penaltyRate,
-      totalPenalty,
-      complianceGap
+  // Calculate weighted average GHG intensity
+  const calculateWeightedGHGIntensity = () => {
+    const totalEnergy = fuelConsumptionData.reduce((sum, fuel) => sum + fuel.energyContent, 0);
+    const weightedSum = fuelConsumptionData.reduce((sum, fuel) => sum + (fuel.ghgIntensity * fuel.energyContent), 0);
+    return totalEnergy > 0 ? weightedSum / totalEnergy : 0;
+  };
+
+  // Calculate total fuel costs
+  const calculateTotalCosts = () => {
+    return fuelConsumptionData.reduce((sum, fuel) => sum + (fuel.fuelConsumed * fuel.fuelCost), 0);
+  };
+
+  // Add new fuel consumption entry
+  const addFuelEntry = () => {
+    const newEntry: FuelConsumptionData = {
+      voyageId: `V${String(fuelConsumptionData.length + 1).padStart(3, '0')}`,
+      departure: "",
+      arrival: "",
+      distance: 0,
+      fuelType: "HFO - 380 cSt",
+      fuelConsumed: 0,
+      fuelCost: 520,
+      ghgIntensity: 91.16,
+      lcvValue: 40.2,
+      energyContent: 0
     };
+    setFuelConsumptionData([...fuelConsumptionData, newEntry]);
+  };
+
+  // Update fuel entry
+  const updateFuelEntry = (index: number, field: keyof FuelConsumptionData, value: string | number) => {
+    const updatedData = [...fuelConsumptionData];
+    updatedData[index] = { ...updatedData[index], [field]: value };
     
-    setPenaltyCalculation(result);
-    console.log('Penalty calculation triggered:', result);
-  };
-
-  const calculateFuelMixIntensity = (scenarios: FuelMixScenario[]) => {
-    const totalPercentage = scenarios.reduce((sum, s) => sum + s.percentage, 0);
-    if (totalPercentage === 0) return 0;
+    // Recalculate energy content when fuel consumed or LCV changes
+    if (field === 'fuelConsumed' || field === 'lcvValue') {
+      updatedData[index].energyContent = updatedData[index].fuelConsumed * updatedData[index].lcvValue * 1000;
+    }
     
-    return scenarios.reduce((sum, s) => sum + (s.ghgIntensity * s.percentage / totalPercentage), 0);
+    setFuelConsumptionData(updatedData);
   };
 
-  const calculateFuelMixCost = (scenarios: FuelMixScenario[]) => {
-    const totalPercentage = scenarios.reduce((sum, s) => sum + s.percentage, 0);
-    if (totalPercentage === 0) return 0;
-    
-    return scenarios.reduce((sum, s) => sum + (s.cost * s.percentage / totalPercentage), 0);
-  };
-
-  const updateFuelMixPercentage = (index: number, newPercentage: number) => {
-    const newMix = [...fuelMix];
-    newMix[index].percentage = newPercentage;
-    setFuelMix(newMix);
-  };
-
-  const addFuelType = () => {
-    setFuelMix([...fuelMix, { fuelType: "New Fuel", percentage: 0, ghgIntensity: 80.0, cost: 600 }]);
-  };
-
-  const removeFuelType = (index: number) => {
-    if (fuelMix.length > 1) {
-      setFuelMix(fuelMix.filter((_, i) => i !== index));
+  // Remove fuel entry
+  const removeFuelEntry = (index: number) => {
+    if (fuelConsumptionData.length > 1) {
+      setFuelConsumptionData(fuelConsumptionData.filter((_, i) => i !== index));
     }
   };
 
-  const renderPenaltyCalculator = () => (
-    <div className="space-y-6">
-      <Card className="hover-elevate">
-        <CardHeader>
-          <div className="flex items-center space-x-2">
-            <Calculator className="h-5 w-5 text-muted-foreground" />
-            <CardTitle>Penalty Calculator</CardTitle>
+  const renderVesselInformation = () => (
+    <Card className="hover-elevate">
+      <CardHeader className="bg-yellow-50 dark:bg-yellow-950/20">
+        <div className="flex items-center space-x-2">
+          <Ship className="h-5 w-5 text-primary" />
+          <CardTitle>Vessel Information</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="vessel-name">Vessel Name</Label>
+            <Input
+              id="vessel-name"
+              value={vesselInfo.name}
+              onChange={(e) => setVesselInfo({...vesselInfo, name: e.target.value})}
+              data-testid="input-vessel-name"
+            />
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="vessel-name">Vessel Name</Label>
-                <Input
-                  id="vessel-name"
-                  value={vesselName}
-                  onChange={(e) => setVesselName(e.target.value)}
-                  data-testid="input-vessel-name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="energy-used">Total Energy Used (MJ)</Label>
-                <Input
-                  id="energy-used"
-                  type="number"
-                  step="1000"
-                  value={energyUsed}
-                  onChange={(e) => setEnergyUsed(parseFloat(e.target.value) || 0)}
-                  data-testid="input-energy-used"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="current-intensity">Current GHG Intensity (gCO2e/MJ)</Label>
-                <Input
-                  id="current-intensity"
-                  type="number"
-                  step="0.1"
-                  value={currentIntensity}
-                  onChange={(e) => setCurrentIntensity(parseFloat(e.target.value) || 0)}
-                  data-testid="input-current-intensity"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="target-intensity">Target GHG Intensity (gCO2e/MJ)</Label>
-                <Input
-                  id="target-intensity"
-                  type="number"
-                  step="0.1"
-                  value={targetIntensity}
-                  onChange={(e) => setTargetIntensity(parseFloat(e.target.value) || 0)}
-                  data-testid="input-target-intensity"
-                />
-              </div>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="imo-number">IMO Number</Label>
+            <Input
+              id="imo-number"
+              value={vesselInfo.imoNumber}
+              onChange={(e) => setVesselInfo({...vesselInfo, imoNumber: e.target.value})}
+              data-testid="input-imo-number"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="flag">Flag</Label>
+            <Select value={vesselInfo.flag} onValueChange={(value) => setVesselInfo({...vesselInfo, flag: value})}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Germany">Germany</SelectItem>
+                <SelectItem value="Norway">Norway</SelectItem>
+                <SelectItem value="Malta">Malta</SelectItem>
+                <SelectItem value="Netherlands">Netherlands</SelectItem>
+                <SelectItem value="Denmark">Denmark</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="vessel-type">Vessel Type</Label>
+            <Select value={vesselInfo.vesselType} onValueChange={(value) => setVesselInfo({...vesselInfo, vesselType: value})}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Container Ship">Container Ship</SelectItem>
+                <SelectItem value="Bulk Carrier">Bulk Carrier</SelectItem>
+                <SelectItem value="Oil Tanker">Oil Tanker</SelectItem>
+                <SelectItem value="Gas Carrier">Gas Carrier</SelectItem>
+                <SelectItem value="Passenger Ship">Passenger Ship</SelectItem>
+                <SelectItem value="General Cargo">General Cargo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="gross-tonnage">Gross Tonnage</Label>
+            <Input
+              id="gross-tonnage"
+              type="number"
+              value={vesselInfo.grossTonnage}
+              onChange={(e) => setVesselInfo({...vesselInfo, grossTonnage: parseInt(e.target.value) || 0})}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="year-built">Year Built</Label>
+            <Input
+              id="year-built"
+              type="number"
+              value={vesselInfo.yearBuilt}
+              onChange={(e) => setVesselInfo({...vesselInfo, yearBuilt: parseInt(e.target.value) || 0})}
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
-            <Button onClick={calculatePenalty} className="w-full" data-testid="button-calculate-penalty">
-              <Calculator className="h-4 w-4 mr-2" />
-              Calculate Penalty
+  const renderFuelConsumptionTable = () => (
+    <Card className="hover-elevate">
+      <CardHeader className="bg-blue-50 dark:bg-blue-950/20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Fuel className="h-5 w-5 text-primary" />
+            <CardTitle>Fuel Consumption Data</CardTitle>
+          </div>
+          <div className="flex space-x-2">
+            <Button onClick={addFuelEntry} size="sm" data-testid="button-add-fuel">
+              Add Entry
             </Button>
-
-            {penaltyCalculation && (
-              <div className="space-y-3 pt-4 border-t">
-                <div className="flex items-center space-x-2">
-                  {penaltyCalculation.complianceGap === 0 ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                  ) : (
-                    <AlertTriangle className="h-5 w-5 text-destructive" />
-                  )}
-                  <span className="font-medium">Calculation Results</span>
-                  <Badge variant={penaltyCalculation.complianceGap === 0 ? "default" : "destructive"}>
-                    {penaltyCalculation.complianceGap === 0 ? "Compliant" : "Non-Compliant"}
-                  </Badge>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
-                  <div className="space-y-2">
-                    <div className="text-sm text-muted-foreground">Compliance Gap</div>
-                    <div className="text-lg font-bold">{penaltyCalculation.complianceGap.toFixed(2)} gCO2e/MJ</div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-sm text-muted-foreground">Deficit</div>
-                    <div className="text-lg font-bold">{penaltyCalculation.deficit.toFixed(1)} tCO2eq</div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-sm text-muted-foreground">Penalty Rate</div>
-                    <div className="text-lg font-bold">€{penaltyCalculation.penaltyRate.toLocaleString()}/tCO2eq</div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-sm text-muted-foreground">Total Penalty</div>
-                    <div className={`text-xl font-bold ${penaltyCalculation.totalPenalty > 0 ? 'text-destructive' : 'text-green-600'}`}>
-                      €{penaltyCalculation.totalPenalty.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-1" />
+              Export
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Voyage</TableHead>
+                <TableHead>Route</TableHead>
+                <TableHead>Distance (nm)</TableHead>
+                <TableHead>Fuel Type</TableHead>
+                <TableHead>Consumed (MT)</TableHead>
+                <TableHead>Cost (€/MT)</TableHead>
+                <TableHead>GHG Intensity</TableHead>
+                <TableHead>LCV (MJ/kg)</TableHead>
+                <TableHead>Energy (MJ)</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {fuelConsumptionData.map((fuel, index) => (
+                <TableRow key={fuel.voyageId}>
+                  <TableCell>
+                    <Input
+                      value={fuel.voyageId}
+                      onChange={(e) => updateFuelEntry(index, 'voyageId', e.target.value)}
+                      className="w-20"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex space-x-1">
+                      <Input
+                        value={fuel.departure}
+                        onChange={(e) => updateFuelEntry(index, 'departure', e.target.value)}
+                        placeholder="From"
+                        className="w-20"
+                      />
+                      <span className="text-muted-foreground">to</span>
+                      <Input
+                        value={fuel.arrival}
+                        onChange={(e) => updateFuelEntry(index, 'arrival', e.target.value)}
+                        placeholder="To"
+                        className="w-20"
+                      />
                     </div>
-                  </div>
-                </div>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={fuel.distance}
+                      onChange={(e) => updateFuelEntry(index, 'distance', parseFloat(e.target.value) || 0)}
+                      className="w-20"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Select 
+                      value={fuel.fuelType} 
+                      onValueChange={(value) => updateFuelEntry(index, 'fuelType', value)}
+                    >
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="HFO - 380 cSt">HFO - 380 cSt</SelectItem>
+                        <SelectItem value="HFO - 180 cSt">HFO - 180 cSt</SelectItem>
+                        <SelectItem value="MGO">MGO</SelectItem>
+                        <SelectItem value="LNG">LNG</SelectItem>
+                        <SelectItem value="Bio-fuel">Bio-fuel</SelectItem>
+                        <SelectItem value="e-Methanol">e-Methanol</SelectItem>
+                        <SelectItem value="e-Ammonia">e-Ammonia</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={fuel.fuelConsumed}
+                      onChange={(e) => updateFuelEntry(index, 'fuelConsumed', parseFloat(e.target.value) || 0)}
+                      className="w-20"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={fuel.fuelCost}
+                      onChange={(e) => updateFuelEntry(index, 'fuelCost', parseFloat(e.target.value) || 0)}
+                      className="w-20"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={fuel.ghgIntensity}
+                      onChange={(e) => updateFuelEntry(index, 'ghgIntensity', parseFloat(e.target.value) || 0)}
+                      className="w-20"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={fuel.lcvValue}
+                      onChange={(e) => updateFuelEntry(index, 'lcvValue', parseFloat(e.target.value) || 0)}
+                      className="w-20"
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {fuel.energyContent.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeFuelEntry(index)}
+                      disabled={fuelConsumptionData.length <= 1}
+                    >
+                      Remove
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        
+        {/* Summary Row */}
+        <div className="p-4 bg-muted/50 border-t">
+          <div className="grid grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-sm text-muted-foreground">Total Energy Used</div>
+              <div className="text-lg font-bold">
+                {fuelConsumptionData.reduce((sum, fuel) => sum + fuel.energyContent, 0).toLocaleString('en-US', { maximumFractionDigits: 0 })} MJ
               </div>
-            )}
+            </div>
+            <div className="text-center">
+              <div className="text-sm text-muted-foreground">Weighted GHG Intensity</div>
+              <div className="text-lg font-bold">
+                {calculateWeightedGHGIntensity().toFixed(2)} gCO2e/MJ
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm text-muted-foreground">Total Fuel Cost</div>
+              <div className="text-lg font-bold">
+                €{calculateTotalCosts().toLocaleString('en-US', { maximumFractionDigits: 0 })}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm text-muted-foreground">Total Fuel Consumed</div>
+              <div className="text-lg font-bold">
+                {fuelConsumptionData.reduce((sum, fuel) => sum + fuel.fuelConsumed, 0).toFixed(1)} MT
+              </div>
+            </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 
-  const renderFuelOptimization = () => (
-    <div className="space-y-6">
-      <Card className="hover-elevate">
-        <CardHeader>
-          <div className="flex items-center space-x-2">
-            <Fuel className="h-5 w-5 text-muted-foreground" />
-            <CardTitle>Fuel Mix Optimization</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {fuelMix.map((fuel, index) => (
-              <div key={index} className="grid grid-cols-5 gap-4 p-4 border rounded-lg">
-                <div className="space-y-2">
-                  <Label>Fuel Type</Label>
-                  <Select value={fuel.fuelType} onValueChange={(value) => {
-                    const newMix = [...fuelMix];
-                    newMix[index].fuelType = value;
-                    setFuelMix(newMix);
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="HFO">Heavy Fuel Oil (HFO)</SelectItem>
-                      <SelectItem value="MGO">Marine Gas Oil (MGO)</SelectItem>
-                      <SelectItem value="LNG">Liquefied Natural Gas (LNG)</SelectItem>
-                      <SelectItem value="Bio-LNG">Bio-LNG</SelectItem>
-                      <SelectItem value="Bio-fuel">Bio-fuel</SelectItem>
-                      <SelectItem value="e-Methanol">e-Methanol</SelectItem>
-                      <SelectItem value="e-Ammonia">e-Ammonia</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Percentage (%)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={fuel.percentage}
-                    onChange={(e) => updateFuelMixPercentage(index, parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>GHG Intensity</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={fuel.ghgIntensity}
-                    onChange={(e) => {
-                      const newMix = [...fuelMix];
-                      newMix[index].ghgIntensity = parseFloat(e.target.value) || 0;
-                      setFuelMix(newMix);
-                    }}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Cost (€/MT)</Label>
-                  <Input
-                    type="number"
-                    value={fuel.cost}
-                    onChange={(e) => {
-                      const newMix = [...fuelMix];
-                      newMix[index].cost = parseFloat(e.target.value) || 0;
-                      setFuelMix(newMix);
-                    }}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Action</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => removeFuelType(index)}
-                    disabled={fuelMix.length <= 1}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              </div>
-            ))}
-
-            <Button onClick={addFuelType} variant="outline" className="w-full">
-              Add Fuel Type
-            </Button>
-
-            <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
-              <div className="text-center">
-                <div className="text-sm text-muted-foreground">Total Percentage</div>
-                <div className={`text-lg font-bold ${fuelMix.reduce((sum, f) => sum + f.percentage, 0) === 100 ? 'text-green-600' : 'text-destructive'}`}>
-                  {fuelMix.reduce((sum, f) => sum + f.percentage, 0).toFixed(1)}%
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm text-muted-foreground">Weighted GHG Intensity</div>
-                <div className="text-lg font-bold">{calculateFuelMixIntensity(fuelMix).toFixed(1)} gCO2e/MJ</div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm text-muted-foreground">Weighted Cost</div>
-                <div className="text-lg font-bold">€{calculateFuelMixCost(fuelMix).toFixed(0)}/MT</div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+  const renderComplianceAnalysis = () => (
+    <Card className="hover-elevate">
+      <CardHeader className="bg-green-50 dark:bg-green-950/20">
+        <div className="flex items-center space-x-2">
+          <BarChart3 className="h-5 w-5 text-primary" />
+          <CardTitle>FuelEU Compliance Analysis</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Year</TableHead>
+              <TableHead>Target Reduction (%)</TableHead>
+              <TableHead>Target Intensity</TableHead>
+              <TableHead>Actual Intensity</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Penalty (€)</TableHead>
+              <TableHead>Credits Used</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {complianceResults.map((result) => {
+              const targetIntensity = baselineIntensity * (1 - result.targetReduction / 100);
+              return (
+                <TableRow key={result.year}>
+                  <TableCell className="font-medium">{result.year}</TableCell>
+                  <TableCell>{result.targetReduction}%</TableCell>
+                  <TableCell>{targetIntensity.toFixed(2)}</TableCell>
+                  <TableCell>{result.actualIntensity.toFixed(2)}</TableCell>
+                  <TableCell>
+                    <Badge variant={
+                      result.complianceStatus === 'compliant' ? 'default' : 
+                      result.complianceStatus === 'warning' ? 'secondary' : 'destructive'
+                    }>
+                      {result.complianceStatus === 'compliant' ? 'Compliant' :
+                       result.complianceStatus === 'warning' ? 'Warning' : 'Non-Compliant'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className={result.penalty > 0 ? 'text-destructive font-medium' : 'text-green-600'}>
+                    €{result.penalty.toLocaleString()}
+                  </TableCell>
+                  <TableCell>{result.creditsUsed}</TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 
-  const renderCompliancePlanning = () => (
-    <div className="space-y-6">
-      <Card className="hover-elevate">
-        <CardHeader>
-          <div className="flex items-center space-x-2">
-            <Target className="h-5 w-5 text-muted-foreground" />
-            <CardTitle>Compliance Scenario Planning</CardTitle>
+  const renderCalculatorParameters = () => (
+    <Card className="hover-elevate">
+      <CardHeader className="bg-purple-50 dark:bg-purple-950/20">
+        <div className="flex items-center space-x-2">
+          <Calculator className="h-5 w-5 text-primary" />
+          <CardTitle>Calculation Parameters</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-6">
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="calculation-year">Calculation Year</Label>
+            <Select value={calculationYear.toString()} onValueChange={(value) => setCalculationYear(parseInt(value))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2025">2025</SelectItem>
+                <SelectItem value="2026">2026</SelectItem>
+                <SelectItem value="2027">2027</SelectItem>
+                <SelectItem value="2028">2028</SelectItem>
+                <SelectItem value="2029">2029</SelectItem>
+                <SelectItem value="2030">2030</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Scenario Name</Label>
-                <Input
-                  value={planningScenario.name}
-                  onChange={(e) => setPlanningScenario({...planningScenario, name: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Total Energy Used (MJ)</Label>
-                <Input
-                  type="number"
-                  value={planningScenario.energyUsed}
-                  onChange={(e) => setPlanningScenario({...planningScenario, energyUsed: parseFloat(e.target.value) || 0})}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Current Intensity (gCO2e/MJ)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={planningScenario.currentIntensity}
-                  onChange={(e) => setPlanningScenario({...planningScenario, currentIntensity: parseFloat(e.target.value) || 0})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Target Intensity (gCO2e/MJ)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={planningScenario.targetIntensity}
-                  onChange={(e) => setPlanningScenario({...planningScenario, targetIntensity: parseFloat(e.target.value) || 0})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Current Credit Balance</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={planningScenario.creditBalance}
-                  onChange={(e) => setPlanningScenario({...planningScenario, creditBalance: parseFloat(e.target.value) || 0})}
-                />
-              </div>
-            </div>
-
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <h4 className="font-medium mb-3">Scenario Analysis</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm text-muted-foreground">Compliance Gap</div>
-                  <div className={`text-lg font-bold ${planningScenario.currentIntensity <= planningScenario.targetIntensity ? 'text-green-600' : 'text-destructive'}`}>
-                    {Math.max(0, planningScenario.currentIntensity - planningScenario.targetIntensity).toFixed(2)} gCO2e/MJ
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Required Credits</div>
-                  <div className="text-lg font-bold">
-                    {Math.max(0, (planningScenario.currentIntensity - planningScenario.targetIntensity) * planningScenario.energyUsed / 1000).toFixed(1)} Credits
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Status</div>
-                  <Badge variant={planningScenario.currentIntensity <= planningScenario.targetIntensity ? "default" : "destructive"}>
-                    {planningScenario.currentIntensity <= planningScenario.targetIntensity ? "Compliant" : "Non-Compliant"}
-                  </Badge>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Improvement Needed</div>
-                  <div className="text-lg font-bold">
-                    {Math.max(0, ((planningScenario.currentIntensity - planningScenario.targetIntensity) / planningScenario.currentIntensity * 100)).toFixed(1)}%
-                  </div>
-                </div>
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="baseline-intensity">Baseline GHG Intensity (gCO2e/MJ)</Label>
+            <Input
+              id="baseline-intensity"
+              type="number"
+              step="0.01"
+              value={baselineIntensity}
+              onChange={(e) => setBaselineIntensity(parseFloat(e.target.value) || 0)}
+              data-testid="input-baseline-intensity"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="total-energy">Total Energy Used (MJ)</Label>
+            <Input
+              id="total-energy"
+              type="number"
+              step="1000"
+              value={totalEnergyUsed}
+              onChange={(e) => setTotalEnergyUsed(parseFloat(e.target.value) || 0)}
+              data-testid="input-total-energy"
+            />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
+          <div className="text-center">
+            <div className="text-sm text-muted-foreground">Current Weighted Intensity</div>
+            <div className="text-lg font-bold">
+              {calculateWeightedGHGIntensity().toFixed(2)} gCO2e/MJ
             </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  const renderCreditPlanning = () => (
-    <div className="space-y-6">
-      <Card className="hover-elevate">
-        <CardHeader>
-          <div className="flex items-center space-x-2">
-            <BarChart3 className="h-5 w-5 text-muted-foreground" />
-            <CardTitle>Credit Banking & Trading Planning</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Current Credit Balance</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={creditPlan.currentBalance}
-                  onChange={(e) => setCreditPlan({...creditPlan, currentBalance: parseFloat(e.target.value) || 0})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Required Credits</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={creditPlan.requiredCredits}
-                  onChange={(e) => setCreditPlan({...creditPlan, requiredCredits: parseFloat(e.target.value) || 0})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Banking Plan (Credits)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={creditPlan.bankingPlan}
-                  onChange={(e) => setCreditPlan({...creditPlan, bankingPlan: parseFloat(e.target.value) || 0})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Borrowing Plan (Credits)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={creditPlan.borrowingPlan}
-                  onChange={(e) => setCreditPlan({...creditPlan, borrowingPlan: parseFloat(e.target.value) || 0})}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Trading Budget (€)</Label>
-              <Input
-                type="number"
-                step="1000"
-                value={creditPlan.tradingBudget}
-                onChange={(e) => setCreditPlan({...creditPlan, tradingBudget: parseFloat(e.target.value) || 0})}
-              />
-            </div>
-
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <h4 className="font-medium mb-3">Credit Planning Summary</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm text-muted-foreground">Net Position</div>
-                  <div className={`text-lg font-bold ${(creditPlan.currentBalance + creditPlan.bankingPlan + creditPlan.borrowingPlan - creditPlan.requiredCredits) >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                    {(creditPlan.currentBalance + creditPlan.bankingPlan + creditPlan.borrowingPlan - creditPlan.requiredCredits).toFixed(1)} Credits
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Strategy Status</div>
-                  <Badge variant={(creditPlan.currentBalance + creditPlan.bankingPlan + creditPlan.borrowingPlan - creditPlan.requiredCredits) >= 0 ? "default" : "destructive"}>
-                    {(creditPlan.currentBalance + creditPlan.bankingPlan + creditPlan.borrowingPlan - creditPlan.requiredCredits) >= 0 ? "Sufficient" : "Deficit"}
-                  </Badge>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Estimated Cost</div>
-                  <div className="text-lg font-bold">
-                    €{((creditPlan.borrowingPlan * 2400) + (creditPlan.tradingBudget)).toLocaleString()}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Banking Interest</div>
-                  <div className="text-lg font-bold text-green-600">
-                    +{(creditPlan.bankingPlan * 0.02).toFixed(1)} Credits/year
-                  </div>
-                </div>
-              </div>
+          <div className="text-center">
+            <div className="text-sm text-muted-foreground">2025 Target Intensity</div>
+            <div className="text-lg font-bold">
+              {(baselineIntensity * 0.98).toFixed(2)} gCO2e/MJ
             </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+          <div className="text-center">
+            <div className="text-sm text-muted-foreground">Compliance Gap</div>
+            <div className={`text-lg font-bold ${calculateWeightedGHGIntensity() <= (baselineIntensity * 0.98) ? 'text-green-600' : 'text-destructive'}`}>
+              {Math.max(0, calculateWeightedGHGIntensity() - (baselineIntensity * 0.98)).toFixed(2)} gCO2e/MJ
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 
   return (
@@ -525,44 +549,55 @@ const CalculateAndPlanning = () => {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-foreground">Calculate & Planning</h1>
         <p className="text-muted-foreground mt-1">
-          Comprehensive tools for FuelEU Maritime compliance calculations, scenario planning, and fuel optimization
+          Comprehensive FuelEU Maritime compliance calculator with fuel consumption tracking and penalty analysis
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="penalty" data-testid="tab-penalty">
+          <TabsTrigger value="calculator" data-testid="tab-calculator">
             <Calculator className="h-4 w-4 mr-2" />
-            Penalty Calculator
+            Main Calculator
           </TabsTrigger>
-          <TabsTrigger value="fuel" data-testid="tab-fuel">
+          <TabsTrigger value="fuel-data" data-testid="tab-fuel-data">
             <Fuel className="h-4 w-4 mr-2" />
-            Fuel Optimization
+            Fuel Data
+          </TabsTrigger>
+          <TabsTrigger value="compliance" data-testid="tab-compliance">
+            <Target className="h-4 w-4 mr-2" />
+            Compliance Analysis
           </TabsTrigger>
           <TabsTrigger value="planning" data-testid="tab-planning">
-            <Target className="h-4 w-4 mr-2" />
-            Compliance Planning
-          </TabsTrigger>
-          <TabsTrigger value="credits" data-testid="tab-credits">
             <BarChart3 className="h-4 w-4 mr-2" />
-            Credit Planning
+            Planning Tools
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="penalty" className="space-y-6">
-          {renderPenaltyCalculator()}
+        <TabsContent value="calculator" className="space-y-6">
+          {renderVesselInformation()}
+          {renderCalculatorParameters()}
+          {renderFuelConsumptionTable()}
         </TabsContent>
 
-        <TabsContent value="fuel" className="space-y-6">
-          {renderFuelOptimization()}
+        <TabsContent value="fuel-data" className="space-y-6">
+          {renderFuelConsumptionTable()}
+        </TabsContent>
+
+        <TabsContent value="compliance" className="space-y-6">
+          {renderComplianceAnalysis()}
         </TabsContent>
 
         <TabsContent value="planning" className="space-y-6">
-          {renderCompliancePlanning()}
-        </TabsContent>
-
-        <TabsContent value="credits" className="space-y-6">
-          {renderCreditPlanning()}
+          <Card>
+            <CardHeader>
+              <CardTitle>Planning Tools</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Advanced planning tools for scenario analysis, fuel optimization, and credit management will be available here.
+              </p>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

@@ -4,7 +4,7 @@ import VesselCard from "./VesselCard";
 import CreditPoolingCard from "./CreditPoolingCard";
 import FuelConsumptionChart from "./FuelConsumptionChart";
 import VoyageDataTable from "./VoyageDataTable";
-import PenaltyCalculator from "./PenaltyCalculator";
+import CalculateAndPlanning from "./CalculateAndPlanning";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -326,22 +326,7 @@ const Dashboard = ({ activeTab }: DashboardProps) => {
   );
 
   const renderCalculatorTab = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <PenaltyCalculator
-          vesselName="Atlantic Pioneer"
-          currentIntensity={82.4}
-          targetIntensity={89.3}
-          energyUsed={125000}
-        />
-        <PenaltyCalculator
-          vesselName="Mediterranean Express"
-          currentIntensity={98.6}
-          targetIntensity={89.3}
-          energyUsed={285000}
-        />
-      </div>
-    </div>
+    <CalculateAndPlanning />
   );
 
   const renderSettingsTab = () => (
@@ -383,14 +368,14 @@ const Dashboard = ({ activeTab }: DashboardProps) => {
           {activeTab === "dashboard" && "Fleet Overview"}
           {activeTab === "vessels" && "Vessel Management"}
           {activeTab === "compliance" && "Compliance Tracking"}
-          {activeTab === "calculator" && "Penalty Calculator"}
+          {activeTab === "calculator" && "Calculate & Planning"}
           {activeTab === "settings" && "Settings"}
         </h1>
         <p className="text-muted-foreground mt-1">
           {activeTab === "dashboard" && "Monitor fleet-wide FuelEU Maritime compliance status and performance metrics"}
           {activeTab === "vessels" && "Manage individual vessel compliance, fuel consumption, and credit balances"}
           {activeTab === "compliance" && "Track voyage compliance data and regulatory requirements"}
-          {activeTab === "calculator" && "Calculate penalties and assess compliance scenarios"}
+          {activeTab === "calculator" && "Comprehensive FuelEU Maritime calculations and planning tools"}
           {activeTab === "settings" && "Configure system preferences and compliance parameters"}
         </p>
       </div>
