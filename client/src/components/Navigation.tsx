@@ -39,8 +39,8 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
             <div className="flex-shrink-0 flex items-center">
               <Ship className="h-8 w-8 text-primary" />
               <div className="ml-3">
-                <h1 className="text-xl font-bold text-foreground">FuelEU Maritime</h1>
-                <p className="text-xs text-muted-foreground">Compliance Platform</p>
+                <h1 className="text-xl font-bold text-foreground">GHGConnect</h1>
+                <p className="text-xs text-muted-foreground">Maritime Compliance Platform</p>
               </div>
             </div>
           </div>

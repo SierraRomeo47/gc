@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calculator, TrendingUp, AlertTriangle, CheckCircle2, Fuel, Ship, Target, BarChart3, Download, FileText, Calendar } from "lucide-react";
+import { Calculator, TrendingUp, AlertTriangle, CheckCircle2, Fuel, Ship, Target, BarChart3, Download, FileText, Calendar, Settings } from "lucide-react";
+import ComplianceFrameworkCalculator from "./ComplianceFrameworkCalculator";
 import { useState } from "react";
 
 interface VesselInfo {
@@ -41,7 +42,16 @@ interface ComplianceResult {
   creditsUsed: number;
 }
 
-const CalculateAndPlanning = () => {
+interface CalculateAndPlanningProps {
+  frameworks?: {
+    fuelEUMaritime: boolean;
+    euETS: boolean;
+    imoNetZero: boolean;
+    ukETS: boolean;
+  };
+}
+
+const CalculateAndPlanning = ({ frameworks }: CalculateAndPlanningProps = {}) => {
   const [activeTab, setActiveTab] = useState("calculator");
   
   // Vessel Information State
@@ -549,12 +559,12 @@ const CalculateAndPlanning = () => {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-foreground">Calculate & Planning</h1>
         <p className="text-muted-foreground mt-1">
-          Comprehensive FuelEU Maritime compliance calculator with fuel consumption tracking and penalty analysis
+          Comprehensive maritime compliance calculator with multi-framework support and cumulative exposure analysis
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="calculator" data-testid="tab-calculator">
             <Calculator className="h-4 w-4 mr-2" />
             Main Calculator
@@ -566,6 +576,10 @@ const CalculateAndPlanning = () => {
           <TabsTrigger value="compliance" data-testid="tab-compliance">
             <Target className="h-4 w-4 mr-2" />
             Compliance Analysis
+          </TabsTrigger>
+          <TabsTrigger value="multi-framework" data-testid="tab-multi-framework">
+            <Settings className="h-4 w-4 mr-2" />
+            Multi-Framework
           </TabsTrigger>
           <TabsTrigger value="planning" data-testid="tab-planning">
             <BarChart3 className="h-4 w-4 mr-2" />
@@ -585,6 +599,31 @@ const CalculateAndPlanning = () => {
 
         <TabsContent value="compliance" className="space-y-6">
           {renderComplianceAnalysis()}
+        </TabsContent>
+
+        <TabsContent value="multi-framework" className="space-y-6">
+          {frameworks && (
+            <ComplianceFrameworkCalculator 
+              frameworks={frameworks}
+              vesselData={{
+                grossTonnage: vesselInfo.grossTonnage,
+                fuelConsumption: fuelConsumptionData.reduce((sum, fuel) => sum + fuel.fuelConsumed, 0),
+                ghgIntensity: calculateWeightedGHGIntensity(),
+                voyageType: 'intra-eu'
+              }}
+            />
+          )}
+          {!frameworks && (
+            <Card>
+              <CardContent className="flex items-center justify-center p-8">
+                <div className="text-center text-muted-foreground">
+                  <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Multi-framework analysis requires compliance framework selection</p>
+                  <p className="text-sm">Please select frameworks from the main dashboard</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="planning" className="space-y-6">

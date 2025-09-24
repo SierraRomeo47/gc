@@ -5,11 +5,14 @@ import CreditPoolingCard from "./CreditPoolingCard";
 import FuelConsumptionChart from "./FuelConsumptionChart";
 import VoyageDataTable from "./VoyageDataTable";
 import CalculateAndPlanning from "./CalculateAndPlanning";
+import ComplianceFrameworkCalculator from "./ComplianceFrameworkCalculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Ship, TrendingUp, AlertCircle, CheckCircle2, Fuel, Calculator, BarChart3 } from "lucide-react";
+import { Ship, TrendingUp, AlertCircle, CheckCircle2, Fuel, Calculator, BarChart3, Settings } from "lucide-react";
 
 interface DashboardProps {
   activeTab: string;
@@ -18,6 +21,14 @@ interface DashboardProps {
 const Dashboard = ({ activeTab }: DashboardProps) => {
   // todo: remove mock functionality
   const [selectedVessel, setSelectedVessel] = useState<string | null>(null);
+  
+  // Compliance Framework Toggles
+  const [complianceFrameworks, setComplianceFrameworks] = useState({
+    fuelEUMaritime: true,
+    euETS: false,
+    imoNetZero: false,
+    ukETS: false
+  });
 
   const mockVessels = [
     {
@@ -191,6 +202,77 @@ const Dashboard = ({ activeTab }: DashboardProps) => {
 
   const renderDashboardOverview = () => (
     <div className="space-y-6">
+      {/* Compliance Framework Toggles */}
+      <Card className="hover-elevate">
+        <CardHeader>
+          <div className="flex items-center space-x-2">
+            <Settings className="h-5 w-5 text-primary" />
+            <CardTitle>Compliance Frameworks</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="flex items-center space-x-3">
+              <Switch
+                id="fueleu-maritime"
+                checked={complianceFrameworks.fuelEUMaritime}
+                onCheckedChange={(checked) => 
+                  setComplianceFrameworks(prev => ({...prev, fuelEUMaritime: checked}))
+                }
+                data-testid="switch-fueleu-maritime"
+              />
+              <Label htmlFor="fueleu-maritime" className="text-sm font-medium">
+                FuelEU Maritime
+              </Label>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Switch
+                id="eu-ets"
+                checked={complianceFrameworks.euETS}
+                onCheckedChange={(checked) => 
+                  setComplianceFrameworks(prev => ({...prev, euETS: checked}))
+                }
+                data-testid="switch-eu-ets"
+              />
+              <Label htmlFor="eu-ets" className="text-sm font-medium">
+                EU ETS
+              </Label>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Switch
+                id="imo-net-zero"
+                checked={complianceFrameworks.imoNetZero}
+                onCheckedChange={(checked) => 
+                  setComplianceFrameworks(prev => ({...prev, imoNetZero: checked}))
+                }
+                data-testid="switch-imo-net-zero"
+              />
+              <Label htmlFor="imo-net-zero" className="text-sm font-medium">
+                IMO Net Zero
+              </Label>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Switch
+                id="uk-ets"
+                checked={complianceFrameworks.ukETS}
+                onCheckedChange={(checked) => 
+                  setComplianceFrameworks(prev => ({...prev, ukETS: checked}))
+                }
+                data-testid="switch-uk-ets"
+              />
+              <Label htmlFor="uk-ets" className="text-sm font-medium">
+                UK ETS
+              </Label>
+            </div>
+          </div>
+          <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+            <p className="text-sm text-muted-foreground">
+              Active frameworks: {Object.values(complianceFrameworks).filter(Boolean).length} of 4 enabled
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Fleet Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="hover-elevate">
@@ -314,6 +396,15 @@ const Dashboard = ({ activeTab }: DashboardProps) => {
 
   const renderComplianceTab = () => (
     <div className="space-y-6">
+      <ComplianceFrameworkCalculator 
+        frameworks={complianceFrameworks}
+        vesselData={{
+          grossTonnage: fleetStats.totalVessels > 0 ? mockVessels[0].grossTonnage : 85000,
+          fuelConsumption: fleetStats.totalVessels > 0 ? mockVessels[0].fuelConsumption : 1250,
+          ghgIntensity: fleetStats.averageIntensity,
+          voyageType: 'intra-eu'
+        }}
+      />
       <VoyageDataTable
         data={mockVoyages}
         title="2025 Compliance Voyages"
@@ -326,7 +417,7 @@ const Dashboard = ({ activeTab }: DashboardProps) => {
   );
 
   const renderCalculatorTab = () => (
-    <CalculateAndPlanning />
+    <CalculateAndPlanning frameworks={complianceFrameworks} />
   );
 
   const renderSettingsTab = () => (
@@ -365,17 +456,17 @@ const Dashboard = ({ activeTab }: DashboardProps) => {
     <div className="max-w-7xl mx-auto px-4 py-6" data-testid="dashboard">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-foreground">
-          {activeTab === "dashboard" && "Fleet Overview"}
+          {activeTab === "dashboard" && "GHGConnect Fleet Overview"}
           {activeTab === "vessels" && "Vessel Management"}
-          {activeTab === "compliance" && "Compliance Tracking"}
+          {activeTab === "compliance" && "Multi-Framework Compliance"}
           {activeTab === "calculator" && "Calculate & Planning"}
           {activeTab === "settings" && "Settings"}
         </h1>
         <p className="text-muted-foreground mt-1">
-          {activeTab === "dashboard" && "Monitor fleet-wide FuelEU Maritime compliance status and performance metrics"}
+          {activeTab === "dashboard" && "Monitor fleet-wide compliance across multiple maritime frameworks"}
           {activeTab === "vessels" && "Manage individual vessel compliance, fuel consumption, and credit balances"}
-          {activeTab === "compliance" && "Track voyage compliance data and regulatory requirements"}
-          {activeTab === "calculator" && "Comprehensive FuelEU Maritime calculations and planning tools"}
+          {activeTab === "compliance" && "Track multi-framework compliance data and cumulative exposure"}
+          {activeTab === "calculator" && "Comprehensive maritime compliance calculations and planning tools"}
           {activeTab === "settings" && "Configure system preferences and compliance parameters"}
         </p>
       </div>
