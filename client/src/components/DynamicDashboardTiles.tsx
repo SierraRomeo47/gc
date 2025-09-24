@@ -94,61 +94,33 @@ const DynamicDashboardTiles = ({
 
   // Render default overview tiles when no frameworks are selected
   const renderDefaultOverviewTiles = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <Card className="hover-elevate border border-blue-500">
         <CardHeader className="pb-3">
           <div className="flex items-center space-x-2">
-            <Fuel className="h-5 w-5 text-blue-600" />
-            <CardTitle className="text-base">FuelEU Maritime</CardTitle>
+            <Ship className="h-5 w-5 text-blue-600" />
+            <CardTitle className="text-base">Fleet Overview</CardTitle>
           </div>
-          <Badge variant="secondary">EU Regulation 2023/1805</Badge>
+          <Badge variant="secondary">Current Status</Badge>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              GHG intensity reduction requirements for maritime transport
-            </p>
-            <div className="flex justify-between text-xs">
-              <span>2025 Target:</span>
-              <span className="font-medium">2% reduction</span>
+            <div className="flex justify-between text-sm">
+              <span>Total Vessels:</span>
+              <span className="font-medium">{fleetData.totalVessels}</span>
             </div>
-            <div className="flex justify-between text-xs">
-              <span>Penalty Rate:</span>
-              <span className="font-medium">€2,400/tCO2eq</span>
+            <div className="flex justify-between text-sm">
+              <span>Compliant:</span>
+              <span className="font-medium text-green-600">{fleetData.compliant}</span>
             </div>
-            <Button variant="outline" size="sm" className="w-full mt-2" 
-              onClick={() => window.location.href = '#'} data-testid="enable-fueleu">
-              Enable Framework
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="hover-elevate border border-purple-500">
-        <CardHeader className="pb-3">
-          <div className="flex items-center space-x-2">
-            <Euro className="h-5 w-5 text-purple-600" />
-            <CardTitle className="text-base">EU ETS</CardTitle>
-          </div>
-          <Badge variant="secondary">Phase-in 2024-2027</Badge>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Emissions trading system for maritime sector
-            </p>
-            <div className="flex justify-between text-xs">
-              <span>2025 Coverage:</span>
-              <span className="font-medium">70%</span>
+            <div className="flex justify-between text-sm">
+              <span>Warning:</span>
+              <span className="font-medium text-yellow-600">{fleetData.warning}</span>
             </div>
-            <div className="flex justify-between text-xs">
-              <span>EUA Price:</span>
-              <span className="font-medium">€85/tonne</span>
+            <div className="flex justify-between text-sm">
+              <span>Non-Compliant:</span>
+              <span className="font-medium text-red-600">{fleetData.nonCompliant}</span>
             </div>
-            <Button variant="outline" size="sm" className="w-full mt-2" 
-              onClick={() => window.location.href = '#'} data-testid="enable-eu-ets">
-              Enable Framework
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -156,57 +128,41 @@ const DynamicDashboardTiles = ({
       <Card className="hover-elevate border border-green-500">
         <CardHeader className="pb-3">
           <div className="flex items-center space-x-2">
-            <Target className="h-5 w-5 text-green-600" />
-            <CardTitle className="text-base">IMO Net Zero</CardTitle>
+            <TrendingUp className="h-5 w-5 text-green-600" />
+            <CardTitle className="text-base">Performance Metrics</CardTitle>
           </div>
-          <Badge variant="secondary">2023 Strategy</Badge>
+          <Badge variant="secondary">Fleet Average</Badge>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              International decarbonization framework
-            </p>
-            <div className="flex justify-between text-xs">
-              <span>2030 Target:</span>
-              <span className="font-medium">20% reduction</span>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{fleetData.averageIntensity.toFixed(1)}</div>
+              <div className="text-xs text-muted-foreground">gCO2e/MJ average intensity</div>
             </div>
-            <div className="flex justify-between text-xs">
-              <span>2050 Goal:</span>
-              <span className="font-medium">Net Zero</span>
+            <div className="flex justify-between text-sm">
+              <span>Total Credits:</span>
+              <span className="font-medium">{fleetData.totalCredits.toLocaleString()}</span>
             </div>
-            <Button variant="outline" size="sm" className="w-full mt-2" 
-              onClick={() => window.location.href = '#'} data-testid="enable-imo">
-              Enable Framework
-            </Button>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="hover-elevate border border-rose-500">
+      <Card className="hover-elevate border border-purple-500">
         <CardHeader className="pb-3">
           <div className="flex items-center space-x-2">
-            <Globe className="h-5 w-5 text-rose-600" />
-            <CardTitle className="text-base">UK ETS</CardTitle>
+            <Settings className="h-5 w-5 text-purple-600" />
+            <CardTitle className="text-base">Getting Started</CardTitle>
           </div>
-          <Badge variant="secondary">Post-Brexit System</Badge>
+          <Badge variant="secondary">Quick Setup</Badge>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              UK emissions trading system for maritime
+              Select regulatory frameworks above to see compliance analysis and recommendations
             </p>
-            <div className="flex justify-between text-xs">
-              <span>Price:</span>
-              <span className="font-medium">£75/tonne</span>
+            <div className="text-xs text-muted-foreground mt-2">
+              Available frameworks: FuelEU Maritime, EU ETS, IMO Net Zero, UK ETS
             </div>
-            <div className="flex justify-between text-xs">
-              <span>Coverage:</span>
-              <span className="font-medium">UK Ports</span>
-            </div>
-            <Button variant="outline" size="sm" className="w-full mt-2" 
-              onClick={() => window.location.href = '#'} data-testid="enable-uk-ets">
-              Enable Framework
-            </Button>
           </div>
         </CardContent>
       </Card>
