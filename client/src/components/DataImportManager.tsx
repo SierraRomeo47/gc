@@ -18,7 +18,9 @@ import {
   Calculator,
   Edit,
   Save,
-  Eye
+  Eye,
+  Lock,
+  Unlock
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -36,11 +38,13 @@ interface ImportedData {
 }
 
 interface CalculationFormula {
+  id: string;
   framework: string;
   type: string;
   formula: string;
-  variables: Record<string, number>;
+  variables: Record<string, number | string>;
   description: string;
+  locked?: boolean;
 }
 
 const DataImportManager = () => {
@@ -372,23 +376,48 @@ const DataImportManager = () => {
                 <Card key={index} className="hover-elevate">
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-base">
-                          {formula.framework} - {formula.type}
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          {formula.description}
-                        </p>
+                      <div className="flex items-center space-x-3">
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <CardTitle className="text-base">
+                              {formula.framework} - {formula.type}
+                            </CardTitle>
+                            {formula.locked && (
+                              <Lock className="h-4 w-4 text-amber-600" />
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {formula.description}
+                          </p>
+                        </div>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditingFormula(editingFormula === `${index}` ? null : `${index}`)}
-                        data-testid={`edit-formula-${index}`}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        {formula.locked && (
+                          <Badge variant="secondary" className="text-xs">
+                            <Lock className="h-3 w-3 mr-1" />
+                            Locked
+                          </Badge>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={formula.locked}
+                          onClick={() => setEditingFormula(editingFormula === `${index}` ? null : `${index}`)}
+                          data-testid={`edit-formula-${index}`}
+                        >
+                          {formula.locked ? (
+                            <>
+                              <Lock className="h-4 w-4 mr-1" />
+                              Locked
+                            </>
+                          ) : (
+                            <>
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -406,6 +435,7 @@ const DataImportManager = () => {
                             }}
                             className="font-mono text-sm"
                             rows={3}
+                            disabled={formula.locked}
                             data-testid={`formula-input-${index}`}
                           />
                         </div>
@@ -415,17 +445,19 @@ const DataImportManager = () => {
                               <Label htmlFor={`var-${key}-${index}`}>{key}</Label>
                               <Input
                                 id={`var-${key}-${index}`}
-                                type="number"
+                                type={typeof value === 'string' ? 'text' : 'number'}
                                 value={value}
                                 onChange={(e) => {
                                   const updatedFormulas = [...formulas];
+                                  const newValue = typeof value === 'string' ? e.target.value : parseFloat(e.target.value);
                                   updatedFormulas[index] = {
                                     ...formula,
-                                    variables: { ...formula.variables, [key]: parseFloat(e.target.value) }
+                                    variables: { ...formula.variables, [key]: newValue }
                                   };
                                   // This would need proper state management
                                 }}
-                                step="0.01"
+                                step={typeof value === 'number' ? '0.01' : undefined}
+                                disabled={formula.locked}
                                 data-testid={`variable-${key}-${index}`}
                               />
                             </div>
@@ -434,12 +466,12 @@ const DataImportManager = () => {
                         <div className="flex space-x-2">
                           <Button
                             size="sm"
-                            onClick={() => updateFormulaMutation.mutate({ id: `${index}`, formula })}
-                            disabled={updateFormulaMutation.isPending}
+                            onClick={() => updateFormulaMutation.mutate({ id: formula.id, formula })}
+                            disabled={updateFormulaMutation.isPending || formula.locked}
                             data-testid={`save-formula-${index}`}
                           >
                             <Save className="h-4 w-4 mr-1" />
-                            Save
+                            {formula.locked ? 'Locked' : 'Save'}
                           </Button>
                           <Button
                             variant="outline"
