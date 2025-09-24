@@ -49,9 +49,15 @@ interface CalculateAndPlanningProps {
     imoNetZero: boolean;
     ukETS: boolean;
   };
+  vesselData?: {
+    grossTonnage: number;
+    fuelConsumption: number;
+    ghgIntensity: number;
+    voyageType: 'intra-eu' | 'extra-eu';
+  };
 }
 
-const CalculateAndPlanning = ({ frameworks }: CalculateAndPlanningProps = {}) => {
+const CalculateAndPlanning = ({ frameworks, vesselData }: CalculateAndPlanningProps = {}) => {
   const [activeTab, setActiveTab] = useState("calculator");
   
   // Vessel Information State

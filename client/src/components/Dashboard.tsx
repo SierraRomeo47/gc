@@ -6,6 +6,11 @@ import FuelConsumptionChart from "./FuelConsumptionChart";
 import VoyageDataTable from "./VoyageDataTable";
 import CalculateAndPlanning from "./CalculateAndPlanning";
 import ComplianceFrameworkCalculator from "./ComplianceFrameworkCalculator";
+import FrameworkSpecificTiles from "./FrameworkSpecificTiles";
+import FrameworkVisualGraphs from "./FrameworkVisualGraphs";
+import DynamicDashboardTiles from "./DynamicDashboardTiles";
+import EnhancedCompliancePage from "./EnhancedCompliancePage";
+import IntegratedFrameworkManager from "./IntegratedFrameworkManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +34,36 @@ const Dashboard = ({ activeTab }: DashboardProps) => {
     imoNetZero: false,
     ukETS: false
   });
+
+  // Custom Tiles Management
+  const [customDashboardTiles, setCustomDashboardTiles] = useState<string[]>([]);
+  const [customComplianceTiles, setCustomComplianceTiles] = useState<string[]>([]);
+
+  const addCustomDashboardTile = (tileType: string) => {
+    if (!customDashboardTiles.includes(tileType)) {
+      setCustomDashboardTiles(prev => [...prev, tileType]);
+    }
+  };
+
+  const removeCustomDashboardTile = (tileId: string) => {
+    setCustomDashboardTiles(prev => prev.filter((_, index) => `custom-${index}` !== tileId));
+  };
+
+  const addCustomComplianceTile = (tileType: string) => {
+    if (!customComplianceTiles.includes(tileType)) {
+      setCustomComplianceTiles(prev => [...prev, tileType]);
+    }
+  };
+
+  const removeCustomComplianceTile = (tileId: string) => {
+    setCustomComplianceTiles(prev => prev.filter((_, index) => `compliance-custom-${index}` !== tileId));
+  };
+
+  // Integrated data refresh handler
+  const handleDataRefresh = () => {
+    // In a real application, this would refresh data from APIs
+    console.log('Refreshing integrated framework data...');
+  };
 
   const mockVessels = [
     {
@@ -201,7 +236,18 @@ const Dashboard = ({ activeTab }: DashboardProps) => {
   };
 
   const renderDashboardOverview = () => (
-    <div className="space-y-6">
+    <IntegratedFrameworkManager
+      frameworks={complianceFrameworks}
+      vesselData={{
+        grossTonnage: fleetStats.totalVessels > 0 ? mockVessels[0].grossTonnage : 85000,
+        fuelConsumption: fleetStats.totalVessels > 0 ? mockVessels[0].fuelConsumption : 1250,
+        ghgIntensity: fleetStats.averageIntensity,
+        voyageType: 'intra-eu'
+      }}
+      onFrameworkChange={setComplianceFrameworks}
+      onDataRefresh={handleDataRefresh}
+    >
+      <div className="space-y-6">
       {/* Compliance Framework Toggles */}
       <Card className="hover-elevate">
         <CardHeader>
@@ -272,6 +318,21 @@ const Dashboard = ({ activeTab }: DashboardProps) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dynamic Dashboard Tiles */}
+      <DynamicDashboardTiles 
+        frameworks={complianceFrameworks}
+        fleetData={fleetStats}
+        vesselData={{
+          grossTonnage: fleetStats.totalVessels > 0 ? mockVessels[0].grossTonnage : 85000,
+          fuelConsumption: fleetStats.totalVessels > 0 ? mockVessels[0].fuelConsumption : 1250,
+          ghgIntensity: fleetStats.averageIntensity,
+          voyageType: 'intra-eu'
+        }}
+        customTiles={customDashboardTiles}
+        onAddCustomTile={addCustomDashboardTile}
+        onRemoveCustomTile={removeCustomDashboardTile}
+      />
 
       {/* Fleet Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -378,6 +439,7 @@ const Dashboard = ({ activeTab }: DashboardProps) => {
         </div>
       </div>
     </div>
+    </IntegratedFrameworkManager>
   );
 
   const renderVesselsTab = () => (
@@ -395,29 +457,30 @@ const Dashboard = ({ activeTab }: DashboardProps) => {
   );
 
   const renderComplianceTab = () => (
-    <div className="space-y-6">
-      <ComplianceFrameworkCalculator 
-        frameworks={complianceFrameworks}
-        vesselData={{
-          grossTonnage: fleetStats.totalVessels > 0 ? mockVessels[0].grossTonnage : 85000,
-          fuelConsumption: fleetStats.totalVessels > 0 ? mockVessels[0].fuelConsumption : 1250,
-          ghgIntensity: fleetStats.averageIntensity,
-          voyageType: 'intra-eu'
-        }}
-      />
-      <VoyageDataTable
-        data={mockVoyages}
-        title="2025 Compliance Voyages"
-      />
-      <FuelConsumptionChart
-        data={mockFuelData}
-        title="Monthly Compliance Tracking"
-      />
-    </div>
+    <EnhancedCompliancePage
+      frameworks={complianceFrameworks}
+      vesselData={{
+        grossTonnage: fleetStats.totalVessels > 0 ? mockVessels[0].grossTonnage : 85000,
+        fuelConsumption: fleetStats.totalVessels > 0 ? mockVessels[0].fuelConsumption : 1250,
+        ghgIntensity: fleetStats.averageIntensity,
+        voyageType: 'intra-eu'
+      }}
+      customTiles={customComplianceTiles}
+      onAddCustomTile={addCustomComplianceTile}
+      onRemoveCustomTile={removeCustomComplianceTile}
+    />
   );
 
   const renderCalculatorTab = () => (
-    <CalculateAndPlanning frameworks={complianceFrameworks} />
+    <CalculateAndPlanning 
+      frameworks={complianceFrameworks}
+      vesselData={{
+        grossTonnage: fleetStats.totalVessels > 0 ? mockVessels[0].grossTonnage : 85000,
+        fuelConsumption: fleetStats.totalVessels > 0 ? mockVessels[0].fuelConsumption : 1250,
+        ghgIntensity: fleetStats.averageIntensity,
+        voyageType: 'intra-eu'
+      }}
+    />
   );
 
   const renderSettingsTab = () => (
