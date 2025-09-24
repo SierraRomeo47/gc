@@ -11,6 +11,7 @@ import FrameworkVisualGraphs from "./FrameworkVisualGraphs";
 import DynamicDashboardTiles from "./DynamicDashboardTiles";
 import EnhancedCompliancePage from "./EnhancedCompliancePage";
 import IntegratedFrameworkManager from "./IntegratedFrameworkManager";
+import DataImportManager from "./DataImportManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -498,6 +499,10 @@ const Dashboard = ({ activeTab }: DashboardProps) => {
     </div>
   );
 
+  const renderDataIntegrationTab = () => (
+    <DataImportManager />
+  );
+
   const getTabContent = () => {
     switch (activeTab) {
       case "dashboard":
@@ -510,6 +515,8 @@ const Dashboard = ({ activeTab }: DashboardProps) => {
         return renderCalculatorTab();
       case "settings":
         return renderSettingsTab();
+      case "data-integration":
+        return renderDataIntegrationTab();
       default:
         return renderDashboardOverview();
     }
@@ -524,6 +531,7 @@ const Dashboard = ({ activeTab }: DashboardProps) => {
           {activeTab === "compliance" && "Multi-Framework Compliance"}
           {activeTab === "calculator" && "Calculate & Planning"}
           {activeTab === "settings" && "Settings"}
+          {activeTab === "data-integration" && "Data Integration & Calculations"}
         </h1>
         <p className="text-muted-foreground mt-1">
           {activeTab === "dashboard" && "Monitor fleet-wide compliance across multiple maritime frameworks"}
@@ -531,6 +539,7 @@ const Dashboard = ({ activeTab }: DashboardProps) => {
           {activeTab === "compliance" && "Track multi-framework compliance data and cumulative exposure"}
           {activeTab === "calculator" && "Comprehensive maritime compliance calculations and planning tools"}
           {activeTab === "settings" && "Configure system preferences and compliance parameters"}
+          {activeTab === "data-integration" && "Import maritime data and customize calculation formulas for compliance frameworks"}
         </p>
       </div>
       

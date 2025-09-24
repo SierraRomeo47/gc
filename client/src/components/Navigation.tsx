@@ -16,6 +16,7 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
     { id: "vessels", label: "Vessels", icon: Ship, badge: "12" },
     { id: "compliance", label: "Compliance", icon: Database, badge: null },
     { id: "calculator", label: "Calculate & Planning", icon: Calculator, badge: null },
+    { id: "data-integration", label: "Data Integration", icon: Database, badge: null },
     { id: "settings", label: "Settings", icon: Settings, badge: null }
   ];
 
