@@ -28,6 +28,64 @@ export interface CalculationFormula {
 
 // In-memory storage for demonstration
 const importedData: Map<string, ImportedDataRecord> = new Map();
+
+// Initialize with sample imported data for development
+function initializeSampleData() {
+  const sampleFiles: ImportedDataRecord[] = [
+    {
+      id: 'sample-1',
+      filename: 'vessel_fleet_Q1_2025.csv',
+      type: 'csv',
+      uploadDate: '2025-01-15',
+      recordCount: 1247,
+      columns: ['imo_number', 'vessel_name', 'gross_tonnage', 'vessel_type', 'flag_state', 'ghg_intensity'],
+      mappedFields: {
+        'imo_number': 'imo_number',
+        'vessel_name': 'vessel_name',
+        'gross_tonnage': 'gross_tonnage',
+        'vessel_type': 'vessel_type',
+        'flag_state': 'flag_state'
+      },
+      status: 'imported'
+    },
+    {
+      id: 'sample-2',
+      filename: 'fuel_consumption_jan_2025.xlsx',
+      type: 'xlsx',
+      uploadDate: '2025-02-01',
+      recordCount: 3456,
+      columns: ['voyage_id', 'imo_number', 'fuel_type', 'fuel_consumption', 'distance_nm', 'departure_port', 'arrival_port'],
+      mappedFields: {
+        'voyage_id': 'voyage_id',
+        'imo_number': 'imo_number',
+        'fuel_type': 'fuel_type',
+        'fuel_consumption': 'fuel_consumption'
+      },
+      status: 'imported'
+    },
+    {
+      id: 'sample-3',
+      filename: 'compliance_reports_2024.xlsx',
+      type: 'xlsx',
+      uploadDate: '2025-01-20',
+      recordCount: 892,
+      columns: ['imo_number', 'reporting_period', 'ghg_intensity', 'target_intensity', 'compliance_status', 'penalty_amount'],
+      mappedFields: {
+        'imo_number': 'imo_number',
+        'compliance_status': 'compliance_status',
+        'penalty_amount': 'penalty_amount'
+      },
+      status: 'imported'
+    }
+  ];
+
+  sampleFiles.forEach(file => {
+    importedData.set(file.id, file);
+  });
+}
+
+// Initialize sample data on module load
+initializeSampleData();
 const calculationFormulas: CalculationFormula[] = [
   // FuelEU Maritime Formulas - Comprehensive Set from ESSF SAPS Document
   {

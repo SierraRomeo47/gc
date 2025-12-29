@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Ship, BarChart3, Calculator, Database, Settings, Menu, X } from "lucide-react";
+import { Ship, BarChart3, Calculator, Database, Settings, Menu, X, Users, Shield } from "lucide-react";
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 
 interface NavigationProps {
   activeTab: string;
@@ -11,12 +13,22 @@ interface NavigationProps {
 const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Fetch vessel count for navigation badge
+  const { data: vessels = [] } = useQuery({
+    queryKey: ['vessels', 'count'],
+    queryFn: () => api.vessels.getAll(),
+    select: (data) => data.length
+  });
+
   const navigationItems = [
     { id: "dashboard", label: "Dashboard", icon: BarChart3, badge: null },
-    { id: "vessels", label: "Vessels", icon: Ship, badge: "12" },
+    { id: "vessels", label: "Vessels", icon: Ship, badge: vessels.toString() },
+    { id: "vessel-details", label: "Vessel Details", icon: Ship, badge: null },
+    { id: "vessel-fleet-management", label: "Fleet Management", icon: Shield, badge: null },
     { id: "compliance", label: "Compliance", icon: Database, badge: null },
     { id: "calculator", label: "Calculate & Planning", icon: Calculator, badge: null },
     { id: "data-integration", label: "Data Integration", icon: Database, badge: null },
+    { id: "user-management", label: "User Management", icon: Users, badge: null },
     { id: "settings", label: "Settings", icon: Settings, badge: null }
   ];
 

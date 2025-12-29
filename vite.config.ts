@@ -29,9 +29,16 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    port: 5000,
+    strictPort: false,
+    hmr: {
+      clientPort: 5000,
+    },
     fs: {
       strict: true,
       deny: ["**/.*"],
     },
+    // No proxy needed - using hybrid Express + Vite setup
+    // API endpoints are served by the same Express server
   },
 });

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calculator, TrendingUp, AlertTriangle, CheckCircle2, Fuel, Ship, Target, BarChart3, Download, FileText, Calendar, Settings } from "lucide-react";
 import ComplianceFrameworkCalculator from "./ComplianceFrameworkCalculator";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface VesselInfo {
   name: string;
@@ -55,26 +55,59 @@ interface CalculateAndPlanningProps {
     ghgIntensity: number;
     voyageType: 'intra-eu' | 'extra-eu';
   };
+  selectedVessel?: {
+    id: string;
+    name: string;
+    imoNumber: string;
+    type: string;
+    flag: string;
+    grossTonnage: number;
+    iceClass?: string | null;
+    mainEngineType?: string;
+    voyageType?: string;
+    complianceStatus: 'compliant' | 'warning' | 'non-compliant';
+    ghgIntensity: number;
+    targetIntensity: number;
+    fuelConsumption: number;
+    creditBalance: number;
+  };
 }
 
-const CalculateAndPlanning = ({ frameworks, vesselData }: CalculateAndPlanningProps = {}) => {
+const CalculateAndPlanning = ({ frameworks, vesselData, selectedVessel }: CalculateAndPlanningProps = {}) => {
   const [activeTab, setActiveTab] = useState("calculator");
   
-  // Vessel Information State
+  // Vessel Information State - Initialize with selected vessel data if available
   const [vesselInfo, setVesselInfo] = useState<VesselInfo>({
-    name: "Atlantic Pioneer",
-    imoNumber: "9876543",
-    flag: "Germany",
-    vesselType: "Container Ship",
-    grossTonnage: 85000,
-    deadweight: 120000,
+    name: selectedVessel?.name || "Atlantic Pioneer",
+    imoNumber: selectedVessel?.imoNumber || "9876543",
+    flag: selectedVessel?.flag || "Germany",
+    vesselType: selectedVessel?.type || "Container Ship",
+    grossTonnage: selectedVessel?.grossTonnage || 85000,
+    deadweight: selectedVessel?.grossTonnage ? selectedVessel.grossTonnage * 1.4 : 120000,
     yearBuilt: 2018
   });
   
-  // Calculator Parameters
+  // Calculator Parameters - Initialize with selected vessel data if available
   const [calculationYear, setCalculationYear] = useState(2025);
-  const [totalEnergyUsed, setTotalEnergyUsed] = useState(1250000);
-  const [baselineIntensity, setBaselineIntensity] = useState(91.16);
+  const [totalEnergyUsed, setTotalEnergyUsed] = useState(selectedVessel?.fuelConsumption ? selectedVessel.fuelConsumption * 1000 : 1250000);
+  const [baselineIntensity, setBaselineIntensity] = useState(selectedVessel?.ghgIntensity || 91.16);
+  
+  // Update vessel info when selectedVessel changes
+  useEffect(() => {
+    if (selectedVessel) {
+      setVesselInfo({
+        name: selectedVessel.name,
+        imoNumber: selectedVessel.imoNumber,
+        flag: selectedVessel.flag,
+        vesselType: selectedVessel.type,
+        grossTonnage: selectedVessel.grossTonnage,
+        deadweight: selectedVessel.grossTonnage * 1.4,
+        yearBuilt: 2018
+      });
+      setTotalEnergyUsed(selectedVessel.fuelConsumption * 1000);
+      setBaselineIntensity(selectedVessel.ghgIntensity);
+    }
+  }, [selectedVessel]);
   
   // Fuel Consumption Data State
   const [fuelConsumptionData, setFuelConsumptionData] = useState<FuelConsumptionData[]>([
@@ -568,6 +601,45 @@ const CalculateAndPlanning = ({ frameworks, vesselData }: CalculateAndPlanningPr
           Comprehensive maritime compliance calculator with multi-framework support and cumulative exposure analysis
         </p>
       </div>
+
+      {/* Selected Vessel Header */}
+      {selectedVessel && (
+        <Card className="mb-6 border-green-200 bg-green-50/50">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Calculator className="h-5 w-5 text-green-600" />
+                  <h3 className="text-lg font-semibold text-green-800">Calculating for: {selectedVessel.name}</h3>
+                </div>
+                <div className="flex items-center space-x-6 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">IMO:</span>
+                    <span className="ml-1 font-mono">{selectedVessel.imoNumber}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Engine:</span>
+                    <span className="ml-1">{selectedVessel.mainEngineType || 'Diesel'}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Current GHG:</span>
+                    <span className="ml-1 font-semibold">{selectedVessel.ghgIntensity} gCO2e/MJ</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Credits:</span>
+                    <span className={`ml-1 font-semibold ${selectedVessel.creditBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {selectedVessel.creditBalance >= 0 ? '+' : ''}{selectedVessel.creditBalance}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <Badge variant={selectedVessel.complianceStatus === 'compliant' ? 'default' : selectedVessel.complianceStatus === 'warning' ? 'secondary' : 'destructive'}>
+                {selectedVessel.complianceStatus}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">

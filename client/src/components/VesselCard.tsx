@@ -1,16 +1,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Ship, Fuel, TrendingUp, AlertCircle } from "lucide-react";
+import { Ship, Fuel, TrendingUp, AlertCircle, Snowflake, Zap } from "lucide-react";
+import type { VesselViewModel, ComplianceStatus } from "@shared/viewModels";
 
 export interface VesselCardProps {
   id: string;
   name: string;
   imoNumber: string;
-  type: "Container Ship" | "Oil Tanker" | "Bulk Carrier" | "Gas Carrier" | "Passenger Ship" | "Offshore Vessel";
+  type: string;
   flag: string;
   grossTonnage: number;
-  complianceStatus: "compliant" | "warning" | "non-compliant";
+  iceClass?: string | null;
+  mainEngineType?: string;
+  voyageType?: string;
+  complianceStatus: ComplianceStatus;
   ghgIntensity: number;
   targetIntensity: number;
   fuelConsumption: number;
@@ -25,6 +29,9 @@ const VesselCard = ({
   type,
   flag,
   grossTonnage,
+  iceClass,
+  mainEngineType,
+  voyageType,
   complianceStatus,
   ghgIntensity,
   targetIntensity,
@@ -101,6 +108,29 @@ const VesselCard = ({
               </p>
             </div>
           </div>
+
+          {/* Special features badges */}
+          {(iceClass || mainEngineType || voyageType) && (
+            <div className="flex flex-wrap gap-1 pt-2">
+              {iceClass && (
+                <Badge variant="outline" className="text-xs">
+                  <Snowflake className="h-3 w-3 mr-1" />
+                  {iceClass}
+                </Badge>
+              )}
+              {mainEngineType && (mainEngineType.includes('LNG') || mainEngineType.includes('Hydrogen') || mainEngineType.includes('Methanol') || mainEngineType.includes('Electric')) && (
+                <Badge variant="outline" className="text-xs bg-green-50">
+                  <Zap className="h-3 w-3 mr-1" />
+                  {mainEngineType}
+                </Badge>
+              )}
+              {voyageType && voyageType === 'omr' && (
+                <Badge variant="outline" className="text-xs bg-blue-50">
+                  OMR Route
+                </Badge>
+              )}
+            </div>
+          )}
 
           <div className="pt-2 border-t">
             <div className="flex items-center justify-between mb-2">

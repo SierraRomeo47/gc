@@ -1,0 +1,247 @@
+# PRODUCT REQUIREMENTS DOCUMENT (PRD)
+
+## GHGConnect — Maritime Compliance & Planning Platform (Improved v1.1)
+
+**Date:** 20 Oct 2025
+**Status:** Draft for build sign‑off (Phase 1.1 scope locked)
+**Owner:** Product (PM) & Maritime Compliance Lead
+**Audience:** Engineering, Design, Data, Compliance, Sales/CS
+
+---
+
+## 0) Executive Summary
+
+GHGConnect unifies FuelEU Maritime, EU ETS, IMO 2023 Strategy (GFI/GHG), and UK ETS workflows into a single pane for **ingest → validate → calculate → plan → submit → audit**. This v1.1 consolidates regulatory logic, closes data‑model gaps (voyage/port coverage, BDNs, OPS), introduces **multi‑tenant RBAC**, hardened **audit/versioning** of formulas, and a **scenario planner** focused on cost‑to‑comply (credits vs fuel mix vs routing). Phase 1.1 remains a monolith (Node/Express + Postgres) with a job queue and cache, but is architected for modular add‑ons.
+
+---
+
+## 1) What changed since v1.0 — Gap Analysis & Fixes
+
+| Gap in v1.0                                             | Impact                              | v1.1 Change / Fix                                                                                                                                                                  |
+| ------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **No multi‑tenant model & RBAC**                        | Single customer only, security risk | Add Tenants, Orgs, Fleets; Roles: *Owner, Admin, Compliance Officer, Data Engineer, Vessel Ops, Finance, Read‑only Verifier*. Row‑level isolation + audit trail.                   |
+| **Voyage coverage logic too shallow (EU ETS, OMR, UK)** | Under/over counting allowances      | Normalize **Port, Country, UN/LOCODE**, **OMR/Non‑OMR flags**, **coverage coefficients** (intra‑EU=100%, extra‑EU=50%, UK domestic, etc.). Segment emissions per leg.              |
+| **No BDN/OPS/shore‑power entities**                     | Incomplete FuelEU proof trail       | Add **BDN** (supplier, batch, LCV, WtT source), **OPS Sessions** (kWh, berth, mandatory port list), and file attachments.                                                          |
+| **Formulas not versioned**                              | Retroactive change risk             | Implement **Regulatory Constant Store (RCS)** with `effective_from/to`, semantic versions, source refs, and **immutable history**.                                                 |
+| **Insufficient validations**                            | Bad data in, wrong penalties        | Add hard/soft checks (IMO format, duplicated legs, implausible distance, negative fuel, fuel–engine mis‑match, missing LCV/WtT). Validation runs pre‑calc with explainable errors. |
+| **Calculator only point‑in‑time**                       | No planning                         | Introduce **Scenario Planner**: fuel mix shifts, routing alternatives, credit banking/borrowing/pooling vs spot prices, RFNBO multipliers; compare **NPV** over 1–5 years.         |
+| **No submissions/exports**                              | Manual re‑work                      | Templates for **EU MRV/ETS summaries**, surrender packs, FuelEU annual balance, verifier packs (ZIP: CSV/XLSX + PDF).                                                              |
+| **Security/PII posture light**                          | Compliance risk                     | Add **MFA**, SSO (SAML/OIDC), **encryption at rest (AES‑256)** & in transit (TLS1.2+), **secrets vault**, least‑privilege, DPIA notes.                                             |
+| **No jobs/cache**                                       | Slow UI                             | Add **BullMQ** job queue (calc/import/report), **Redis cache** for heavy aggregates, **rate limits** on API.                                                                       |
+| **Observability**                                       | Hard to diagnose                    | Add **structured logs**, traces, metrics (p95 API, queue depth, calc time), error budgets/SLOs.                                                                                    |
+| **Testing**                                             | Manual heavy                        | Golden‑file tests for formulas, unit tests for coverage rules, E2E happy‑path for ingest→calc→report.                                                                              |
+
+---
+
+## 2) Goals & Non‑Goals
+
+### 2.1 Goals
+
+* Accurate, explainable **per‑framework** compliance & costs at voyage, vessel, fleet levels.
+* **Tenant‑isolated** multi‑org with robust RBAC and audit trails.
+* **Scenario Planner** that quantifies penalty vs capex/opex trade‑offs.
+* **First‑class ingest** for CSV/XLSX + API hooks; deterministic validations.
+* Export packs suitable for verifiers and surrender events.
+
+### 2.2 Non‑Goals (v1.1)
+
+* Real‑time AIS tracking & weather routing (planned v2).
+* Mobile apps (v2).
+* Automated exchange with registries (v2—depends on partner APIs).
+
+---
+
+## 3) Personas & Primary Jobs‑to‑be‑Done
+
+* **Compliance Officer (Pri):** “Prove we’re compliant and avoid penalties.”
+* **Finance Controller (Pri):** “Forecast & hedge exposure to EUA/UKA/FuelEU penalties.”
+* **Data Engineer (Sec):** “Automate clean ingest and reproducible calcs.”
+* **Vessel/Ops (Sec):** “Know which voyages/fuels jeopardize compliance.”
+* **Verifier (RO):** “Read‑only access to immutable data & evidence pack.”
+
+---
+
+## 4) User Stories & Acceptance Criteria (key)
+
+1. **Import & Validate**
+   *As a Data Engineer, I upload a monthly voyage+fuel CSV and get row‑level validation results within 2 minutes for ≤10k rows.*
+   **AC:** 95%+ valid rows auto‑map; hard errors block calc; soft warnings are triaged.
+
+2. **Compute Multi‑Framework**
+   *As a Compliance Officer, I run the calculator and see EU ETS allowances, FuelEU balance, IMO GFI gap, and UK ETS exposure with sources & assumptions.*
+   **AC:** Breakdown by leg/voyage/vessel; coverage coefficients visible; totals reconcile.
+
+3. **Scenario Planning**
+   *As Finance, I compare 3 scenarios (RFNBO 5%, LNG shift, buy credits) for 2026–2028 and export a signed PDF of the chosen plan.*
+   **AC:** Shows deltas vs baseline in allowances, FuelEU penalties, cash impact & payback.
+
+4. **Audit & Versioning**
+   *As a Verifier, I can view all constants and formulas as of 31 Mar 2026 and download the evidence pack.*
+   **AC:** Time‑travel view; SHA of calc run; immutable history; user & timestamp.
+
+5. **Alerts & Deadlines**
+   *As Compliance, I get alerts for MRV submission and EUA surrender windows and for any vessel breaching thresholds.*
+   **AC:** Configurable reminders; in‑app + email; suppression window; audit of sends.
+
+---
+
+## 5) Functional Requirements
+
+### 5.1 Multi‑Tenant & RBAC
+
+* Entities: **Tenant → Org → Fleet → Vessel** (4‑level hierarchy).
+* Roles: `OWNER, ADMIN, COMPLIANCE, DATA_ENGINEER, OPS, FINANCE, VERIFIER_RO`.
+* Row‑level security: tenant_id scoped; cross‑tenant isolation enforced in DB and app.
+* **Audit log** (immutable) on imports, formula edits, scenario runs, exports.
+
+### 5.2 Data Model (normalized, v1.1)
+
+* **ports**: `id, unlocode, name, country_iso, is_eu, is_uk, is_omr, geo(lat,lon)`
+* **vessels**: `id, imo, name, type, flag, gt, dwt, main_engine_type`
+* **voyages**: `id, vessel_id, dep_port_id, arr_port_id, dep_at, arr_at, distance_nm, voyage_type(enum), coverage_eu_pct, coverage_uk_pct`
+* **fuels**: `id, code, name, lcv_mjkg, default_ttw_gco2e_mj, default_wtt_gco2e_mj`
+* **consumptions**: `id, voyage_id, fuel_id, mass_t, engine_type, methane_slip_pct`
+* **ops_sessions**: `id, vessel_id, port_id, date, kwh`
+* **bdns**: `id, vessel_id, fuel_id, supplier, batch_no, delivery_dt, doc_url, lcv_mjkg, wtt_source`
+* **constants_versions**: `id, key, value_json, source, effective_from, effective_to, version`
+* **calc_runs**: `id, tenant_id, started_at, finished_at, constants_version, sha, summary_json`
+* **scenarios**: `id, name, params_json, baseline_calc_run_id`
+
+### 5.3 Ingest & Validation
+
+* File types: CSV/XLSX; later JSON API hooks.
+* Auto‑map fields (IMO, UN/LOCODE, fuel codes).
+* Validations (non‑exhaustive):
+
+  * **Hard:** invalid IMO; missing UN/LOCODE; negative fuel; duplicate voyage ID; distance outliers (Haversine gate ±50%).
+  * **Soft:** LCV/WtT missing (fallback to defaults); fuel–engine mismatch; unusual slip.
+* **Explainable report** with row#, rule, fix hint; export to CSV.
+
+### 5.4 Calculations (overview)
+
+* **EU ETS:** coverage per leg (100% intra‑EU, 50% extra‑EU), phase‑in % by year, tCO₂ = mass × factor; allowances × price band; CH₄/N₂O (2026+) with GWP.
+* **FuelEU:** Attained vs target WtW intensity (gCO₂e/MJ) using LCV, WtT + TtW, methane slip; RFNBO incentives per current window; OPS shortfall penalties; bank/borrow caps by year.
+* **IMO (GFI):** Attained fuel intensity vs trajectory; remedial cost tiers.
+* **UK ETS:** UK domestic coverage; price bands; multi‑GHG from launch.
+* **Traceability:** Every output shows constants & sources, with version pin.
+
+### 5.5 Scenario Planner
+
+* Inputs: fuel mix %, RFNBO %, routing (port choice), pool/bank/borrow, credit buy/sell price ranges.
+* Outputs: allowances, FuelEU balance, penalties, cash flow (monthly/annual), sensitivity (Tornado).
+* Save/compare scenarios; export PDF/XLSX.
+
+### 5.6 Reporting, Submissions & Verifier Pack
+
+* Pre‑built reports: **EU ETS allowance summary**, **FuelEU annual balance**, **IMO GFI summary**, **UK ETS exposure**.
+* Evidence pack ZIP: data CSV/XLSX + constants snapshot + calc log + attachments (BDNs, OPS).
+* Sign‑off workflow (prepared by, reviewed by, approved by with timestamps).
+
+### 5.7 Alerts & Tasks
+
+* System alerts for **MRV submission window**, **EUA/UKA surrender**, **FuelEU declarations**, and rule breaches (e.g., vessel > target by X%).
+* Email + in‑app; daily digest; audit of notifications.
+
+---
+
+## 6) Non‑Functional Requirements
+
+* **Availability:** 99.9% (monthly); **RTO/RPO:** 4h/1h (backups hourly; 30‑day retention).
+* **Performance:** p95 API < 500 ms; ingest 10k rows < 2 min; calc run (100 vessels, 5k voyages) < 5 min via jobs.
+* **Security:** SSO (SAML/OIDC), MFA, SCIM (v2.0 later); encryption at rest TLS1.2+; secret vault; CIS‑hardened images; OWASP ASVS L2.
+* **Privacy/GDPR:** data processing addendum; data residency (EU option); right‑to‑erasure (tenancy‑scoped).
+* **Observability:** logs, metrics, traces; dashboards for queue depth, calc duration, error rate.
+
+---
+
+## 7) Architecture (Phase 1.1)
+
+* **Frontend:** React + TS, TanStack Query, Tailwind + shadcn/ui; Recharts; state kept minimal, server as source‑of‑truth.
+* **Backend:** Node/Express + Postgres (Drizzle ORM); **BullMQ** for jobs; **Redis** cache; file storage S3‑compatible (signed URLs).
+* **Services:** Ingest, Validation, Calculator, Scenario, Reporting, Alerts, Auth/RBAC, Constants Store.
+* **Security:** JWT access/refresh; server‑side session hardening; rate limiting; Helmet; CORS allow‑list.
+
+---
+
+## 8) API (selected)
+
+* `POST /v1/ingest/files` — upload; returns `import_id`.
+* `GET /v1/ingest/:import_id/validations` — paginated errors/warnings.
+* `POST /v1/calcs/run` — body: `as_of, frameworks[], constants_version?`; returns `calc_run_id`.
+* `GET /v1/calcs/:id` — summary & drill links.
+* `POST /v1/scenarios` — create scenario; compare against baseline.
+* `GET /v1/reports/:type` — stream CSV/XLSX/PDF.
+* `GET /v1/constants?as_of=YYYY-MM-DD` — version‑pinned constants.
+* `GET /v1/audit` — filter by entity/action/user/time.
+
+*All endpoints tenant‑scoped; RBAC enforced; all responses include `request_id`.*
+
+---
+
+## 9) UX — Key Screens
+
+1. **Compliance Overview**: fleet meters by framework, top risk vessels, deadline banner.
+2. **Voyage Ledger**: row grid with coverage chips (EU 100/50, UK 100), status pills, inline fixes.
+3. **Calculator Run**: inputs → assumptions → results with drill‑downs & download.
+4. **Scenario Planner**: sliders/toggles; comparison cards; cash chart; export.
+5. **Constants Browser**: time‑travel timeline; diff view; source links; pin to run.
+6. **Audit Explorer**: who‑did‑what‑when; export trail for verifiers.
+
+---
+
+## 10) Testing Strategy (v1.1)
+
+* **Unit:** coverage rules; GWP math; FuelEU intensity builder; OPS penalties.
+* **Golden files:** deterministic inputs → outputs; diff on PR.
+* **E2E (Playwright):** ingest→validate→calc→export; role‑based access.
+* **Perf:** calc run duration budgeted; synthetic data at 5× scale.
+* **Security:** dependency scan; ZAP baseline; authz regression tests.
+
+---
+
+## 11) Rollout & Milestones
+
+* **M0 – Design lock (1 w):** schema, APIs, UX wires.
+* **M1 – Ingest & Validation (2 w)**
+* **M2 – Calculator & Constants Store (3 w)**
+* **M3 – Scenario & Reports (2 w)**
+* **M4 – RBAC, Audit, Alerts (2 w)**
+* **M5 – Hardening & E2E, UAT (1 w)**
+* **Gate:** UAT sign‑off with 3 customer datasets; verifier pack exported.
+
+---
+
+## 12) Success Metrics
+
+* **Accuracy:** ±0.5% variance vs verifier benchmarks across 3 datasets.
+* **Time‑to‑insight:** ingest→first results < 10 min for 10k rows.
+* **Adoption:** ≥5 active users/tenant in 30 days; ≥80% weekly calculator use.
+
+---
+
+## 13) Open Risks & Decisions
+
+* **Regulatory drift:** frequent updates; mitigated via versioned constants & time‑travel.
+* **Data quality variance:** add connectors later (DNV/Verifavia/Veracity APIs).
+* **Price volatility (EUA/UKA):** allow price bands & stress tests in scenarios.
+* **OPS coverage lists:** keep lists in constants store with effective dates.
+
+---
+
+## 14) Appendix — Data Dictionary (selected)
+
+* **coverage_eu_pct**: decimal (0, 0.5, 1.0) based on leg classification.
+* **ttw_gco2e_mj / wtt_gco2e_mj**: per fuel, with override per BDN batch when evidence exists.
+* **methane_slip_pct**: per engine/fuel combo, defaulted but overrideable with evidence.
+* **calc_run.sha**: hash of inputs + constants + code version for reproducibility.
+
+---
+
+## 15) Changelog (from v1.0 to v1.1)
+
+* Added **Multi‑tenant & RBAC**, **Audit**, **Constants Versioning**.
+* Introduced **Voyage/Port coverage** model incl. **UN/LOCODE & OMR flags**.
+* New entities: **BDN**, **OPS session**; attachments pipeline.
+* Launched **Scenario Planner** and **Verifier Pack** exports.
+* Added **BullMQ + Redis**, perf budgets, observability & security upgrades.
+* Expanded **API** surface and **testing** methodology.

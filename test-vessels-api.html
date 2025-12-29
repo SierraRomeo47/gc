@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - GHGConnect</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .vessel-card { display: inline-block; margin: 10px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; width: 300px; vertical-align: top; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; margin: 2px; }
+        .compliant { background-color: #d4edda; color: #155724; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .non-compliant { background-color: #f8d7da; color: #721c24; }
+        .ice-class { background-color: #e3f2fd; color: #1565c0; }
+        .alt-fuel { background-color: #e8f5e8; color: #2e7d32; }
+        .omr { background-color: #f3e5f5; color: #7b1fa2; }
+        button { padding: 10px 20px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .loading { color: #666; font-style: italic; }
+        .error { color: #dc3545; }
+        .success { color: #28a745; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚢 GHGConnect API Test</h1>
+        <p>Testing vessel endpoints to verify database integration</p>
+
+        <div class="test-section">
+            <h2>API Endpoints</h2>
+            <button onclick="testDatabaseEndpoint()">Test Database Endpoint (/api/vessels/all)</button>
+            <button onclick="testDemoEndpoint()">Test Demo Endpoint (/api/vessels/demo)</button>
+            <button onclick="testPortsEndpoint()">Test Ports (/api/ports)</button>
+            <button onclick="testFuelsEndpoint()">Test Fuels (/api/fuels)</button>
+            <div id="api-status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Vessels Display</h2>
+            <div id="vessels-container">
+                <p class="loading">Click a button above to load vessels...</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Reference Data</h2>
+            <div id="reference-data">
+                <p class="loading">Click buttons above to load reference data...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function testDatabaseEndpoint() {
+            const statusDiv = document.getElementById('api-status');
+            const vesselsDiv = document.getElementById('vessels-container');
+            
+            statusDiv.innerHTML = '<p class="loading">Testing database endpoint...</p>';
+            vesselsDiv.innerHTML = '<p class="loading">Loading vessels...</p>';
+            
+            try {
+                const response = await fetch('/api/vessels/all');
+                const vessels = await response.json();
+                
+                statusDiv.innerHTML = `<p class="success">✅ Database endpoint working! Found ${vessels.length} vessels</p>`;
+                displayVessels(vessels, 'Database');
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">❌ Database endpoint failed: ${error.message}</p>`;
+                vesselsDiv.innerHTML = '<p class="error">Failed to load vessels</p>';
+            }
+        }
+
+        async function testDemoEndpoint() {
+            const statusDiv = document.getElementById('api-status');
+            const vesselsDiv = document.getElementById('vessels-container');
+            
+            statusDiv.innerHTML = '<p class="loading">Testing demo endpoint...</p>';
+            vesselsDiv.innerHTML = '<p class="loading">Loading vessels...</p>';
+            
+            try {
+                const response = await fetch('/api/vessels/demo');
+                const vessels = await response.json();
+                
+                statusDiv.innerHTML = `<p class="success">✅ Demo endpoint working! Found ${vessels.length} vessels</p>`;
+                displayVessels(vessels, 'Demo');
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">❌ Demo endpoint failed: ${error.message}</p>`;
+                vesselsDiv.innerHTML = '<p class="error">Failed to load vessels</p>';
+            }
+        }
+
+        async function testPortsEndpoint() {
+            const refDiv = document.getElementById('reference-data');
+            
+            try {
+                const response = await fetch('/api/ports');
+                const ports = await response.json();
+                
+                refDiv.innerHTML = `
+                    <h3>Ports (${ports.length} total)</h3>
+                    <p><strong>EU Core:</strong> ${ports.filter(p => p.isEu && !p.isOmr).length}</p>
+                    <p><strong>OMR Ports:</strong> ${ports.filter(p => p.isOmr).length}</p>
+                    <p><strong>UK Ports:</strong> ${ports.filter(p => p.isUk).length}</p>
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        ${ports.slice(0, 10).map(port => 
+                            `<div>${port.unlocode} - ${port.name} (${port.countryIso}) ${port.isOmr ? '🏝️ OMR' : ''}</div>`
+                        ).join('')}
+                        ${ports.length > 10 ? `<div>... and ${ports.length - 10} more</div>` : ''}
+                    </div>
+                `;
+            } catch (error) {
+                refDiv.innerHTML = `<p class="error">Failed to load ports: ${error.message}</p>`;
+            }
+        }
+
+        async function testFuelsEndpoint() {
+            const refDiv = document.getElementById('reference-data');
+            
+            try {
+                const response = await fetch('/api/fuels');
+                const fuels = await response.json();
+                
+                refDiv.innerHTML = `
+                    <h3>Fuels (${fuels.length} types)</h3>
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        ${fuels.map(fuel => 
+                            `<div>${fuel.code} - ${fuel.name} (LCV: ${fuel.lcv} MJ/kg)</div>`
+                        ).join('')}
+                    </div>
+                `;
+            } catch (error) {
+                refDiv.innerHTML = `<p class="error">Failed to load fuels: ${error.message}</p>`;
+            }
+        }
+
+        function displayVessels(vessels, source) {
+            const vesselsDiv = document.getElementById('vessels-container');
+            
+            const stats = {
+                total: vessels.length,
+                compliant: vessels.filter(v => v.complianceStatus === 'compliant').length,
+                warning: vessels.filter(v => v.complianceStatus === 'warning').length,
+                nonCompliant: vessels.filter(v => v.complianceStatus === 'non-compliant').length,
+                iceClass: vessels.filter(v => v.iceClass).length,
+                altFuel: vessels.filter(v => v.mainEngineType && (v.mainEngineType.includes('LNG') || v.mainEngineType.includes('Hydrogen') || v.mainEngineType.includes('Methanol') || v.mainEngineType.includes('Electric'))).length,
+                omr: vessels.filter(v => v.voyageType === 'omr').length
+            };
+            
+            vesselsDiv.innerHTML = `
+                <h3>${source} Vessels (${stats.total} total)</h3>
+                <div style="margin-bottom: 20px;">
+                    <span class="badge compliant">${stats.compliant} Compliant</span>
+                    <span class="badge warning">${stats.warning} Warning</span>
+                    <span class="badge non-compliant">${stats.nonCompliant} Non-Compliant</span>
+                    <span class="badge ice-class">${stats.iceClass} Ice Class</span>
+                    <span class="badge alt-fuel">${stats.altFuel} Alt Fuel</span>
+                    <span class="badge omr">${stats.omr} OMR</span>
+                </div>
+                <div style="max-height: 600px; overflow-y: auto;">
+                    ${vessels.map(vessel => `
+                        <div class="vessel-card">
+                            <h4>${vessel.name}</h4>
+                            <p><strong>IMO:</strong> ${vessel.imoNumber}</p>
+                            <p><strong>Type:</strong> ${vessel.type}</p>
+                            <p><strong>Flag:</strong> ${vessel.flag}</p>
+                            <p><strong>GT:</strong> ${vessel.grossTonnage.toLocaleString()}</p>
+                            <p><strong>GHG:</strong> ${vessel.ghgIntensity}/${vessel.targetIntensity} gCO2e/MJ</p>
+                            <p><strong>Credits:</strong> ${vessel.creditBalance >= 0 ? '+' : ''}${vessel.creditBalance.toFixed(1)}</p>
+                            <div>
+                                <span class="badge ${vessel.complianceStatus}">${vessel.complianceStatus}</span>
+                                ${vessel.iceClass ? `<span class="badge ice-class">❄️ ${vessel.iceClass}</span>` : ''}
+                                ${vessel.mainEngineType && (vessel.mainEngineType.includes('LNG') || vessel.mainEngineType.includes('Hydrogen') || vessel.mainEngineType.includes('Methanol') || vessel.mainEngineType.includes('Electric')) ? `<span class="badge alt-fuel">⚡ ${vessel.mainEngineType}</span>` : ''}
+                                ${vessel.voyageType === 'omr' ? `<span class="badge omr">🏝️ OMR Route</span>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Auto-test database endpoint on page load
+        window.onload = function() {
+            testDatabaseEndpoint();
+        };
+    </script>
+</body>
+</html>
+
+
+
