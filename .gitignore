@@ -9,3 +9,28 @@ vite.config.ts.*
 .env
 .env.local
 .env.*.local
+
+# Replit agent state files
+.local/
+
+# Docker volumes and data
+postgres_data/
+redis_data/
+pgadmin_data/
+
+# Build artifacts
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+Thumbs.db
+.DS_Store
